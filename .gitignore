@@ -1,0 +1,27 @@
+# PowerShell
+*.ps1xml
+*.log
+
+# Build artifacts
+bin/
+obj/
+*.dll
+*.pdb
+
+# Test results
+TestResults/
+*.trx
+coverage.xml
+
+# IDE
+.vscode/
+.vs/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+packages/
+node_modules/
