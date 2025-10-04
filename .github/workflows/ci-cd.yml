@@ -73,7 +73,7 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          $results = Invoke-ScriptAnalyzer -Path ./New-GHProject -Recurse -Settings PSGallery
+          $results = Invoke-ScriptAnalyzer -Path ./New-GHProject -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
           $results | Format-Table -AutoSize
           if ($results) {
             Write-Error "PSScriptAnalyzer found $($results.Count) issue(s)"
