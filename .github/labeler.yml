@@ -69,3 +69,9 @@ pre-commit:
   - changed-files:
       - any-glob-to-any-file:
           - .pre-commit-config.yaml
+powershell:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.ps1"
+          - "**/*.psm1"
+          - "**/*.psd1"
