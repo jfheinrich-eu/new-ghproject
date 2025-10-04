@@ -98,8 +98,19 @@ This project uses GitHub Actions for:
 
 - **Continuous Integration**: Runs tests on every push and pull request across Windows, Linux, and macOS
 - **Code Analysis**: Runs PSScriptAnalyzer to ensure code quality
+- **Auto-labeling**: Automatically labels PRs based on changed files
+- **Automated Releases**: Creates releases based on PR labels (major/minor/patch)
 - **Deployment**: Automatically publishes to PowerShell Gallery on release
 - **Dependency Updates**: Dependabot keeps GitHub Actions up to date
+
+### Release Process
+
+Releases are automated based on PR labels:
+- Add `major release`, `minor release`, or `patch release` label to your PR
+- Add `skip release` to skip release creation
+- When merged, the workflow automatically bumps the version, creates a tag, and publishes a GitHub release
+
+See [Release Workflow Documentation](.github/RELEASE_WORKFLOW.md) for detailed information.
 
 ## Contributing
 
