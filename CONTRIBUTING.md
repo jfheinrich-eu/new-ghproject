@@ -43,7 +43,7 @@ Enhancement suggestions are welcome! Please:
 
 ### Prerequisites
 
-- PowerShell 5.1 or higher
+- PowerShell 7.4 or higher
 - Git
 - Pester (for testing)
 - PSScriptAnalyzer (for linting)
