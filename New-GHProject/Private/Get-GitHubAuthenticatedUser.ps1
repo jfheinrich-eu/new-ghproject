@@ -1,4 +1,23 @@
+<#
+.SYNOPSIS
+    Retrieves the login name (username) of the authenticated GitHub user.
+
+.DESCRIPTION
+    This private function uses a GitHub personal access token to authenticate and sends a request 
+    to GitHub's REST API to obtain information about the currently authenticated user. 
+    It returns the login name (username) of the user. If authentication fails or another error occurs, 
+    a descriptive error message is thrown.
+
+.PARAMETER Token
+    The GitHub personal access token used for authentication. This parameter is mandatory.
+
+.EXAMPLE
+    PS C:\> Get-GitHubAuthenticatedUser -Token 'ghp_XXXXXXXXXXXXXXXXXXXX'
+
+    Returns the login name of the authenticated GitHub user.
+#>
 function Get-GitHubAuthenticatedUser {
+    [CmdletBinding()]
     param(
         # The GitHub personal access token, required for authentication
         [Parameter(Mandatory = $true)]
