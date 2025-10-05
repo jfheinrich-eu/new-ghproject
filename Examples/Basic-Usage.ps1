@@ -53,8 +53,18 @@ Write-Host "`n=== Example 3: Create Private Repository ===" -ForegroundColor Cya
 #               -Token $token `
 #               -Verbose
 
-# Example 4: Create a repository in an organization
-Write-Host "`n=== Example 4: Create Organization Repository ===" -ForegroundColor Cyan
+# Example 4: Create a repository in an organization (with IsOrganization parameter to avoid extra API call)
+Write-Host "`n=== Example 4: Create Organization Repository (Optimized) ===" -ForegroundColor Cyan
+# Uncomment to run:
+# New-GHProject -RepositoryName "org-repo" `
+#               -Owner "myorganization" `
+#               -Description "Organization repository" `
+#               -IsOrganization `
+#               -Token $token `
+#               -Verbose
+
+# Example 5: Create a repository in an organization (without IsOrganization parameter)
+Write-Host "`n=== Example 5: Create Organization Repository (Auto-detect) ===" -ForegroundColor Cyan
 # Uncomment to run:
 # New-GHProject -RepositoryName "org-repo" `
 #               -Owner "myorganization" `
@@ -62,10 +72,10 @@ Write-Host "`n=== Example 4: Create Organization Repository ===" -ForegroundColo
 #               -Token $token `
 #               -Verbose
 
-# Example 5: Get help
-Write-Host "`n=== Example 5: Get Help ===" -ForegroundColor Cyan
+# Example 6: Get help
+Write-Host "`n=== Example 6: Get Help ===" -ForegroundColor Cyan
 Get-Help New-GHProject -Full
 
-# Example 6: View examples
-Write-Host "`n=== Example 6: View Examples ===" -ForegroundColor Cyan
+# Example 7: View examples
+Write-Host "`n=== Example 7: View Examples ===" -ForegroundColor Cyan
 Get-Help New-GHProject -Examples

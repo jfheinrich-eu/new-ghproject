@@ -24,11 +24,19 @@
     .PARAMETER Token
         GitHub personal access token with repo permissions.
 
+    .PARAMETER IsOrganization
+        If specified, creates the repository under an organization. When not specified,
+        the function will automatically detect if the owner is the authenticated user or an organization
+        by making an API call to get the authenticated user.
+
     .EXAMPLE
         New-GHProject -RepositoryName "my-new-repo" -Owner "myuser" -Description "My new repository" -Token $token
 
     .EXAMPLE
         New-GHProject -RepositoryName "private-repo" -Owner "myorg" -Private -Token $token
+
+    .EXAMPLE
+        New-GHProject -RepositoryName "org-repo" -Owner "myorg" -IsOrganization -Token $token
     #>
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -44,6 +52,9 @@
 
         [Parameter(Mandatory = $false)]
         [switch]$Private,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$IsOrganization,
 
         [Parameter(Mandatory = $true)]
         [string]$Token
@@ -71,7 +82,12 @@
                 } | ConvertTo-Json
 
                 $repoUrl = "https://api.github.com/user/repos"
-                if ($Owner -ne (Get-GitHubAuthenticatedUser -Token $Token)) {
+                if ($IsOrganization) {
+                    # IsOrganization parameter specified, create under organization
+                    $repoUrl = "https://api.github.com/orgs/$Owner/repos"
+                }
+                elseif ($Owner -ne (Get-GitHubAuthenticatedUser -Token $Token)) {
+                    # IsOrganization not specified, check if owner is different from authenticated user
                     $repoUrl = "https://api.github.com/orgs/$Owner/repos"
                 }
 

@@ -70,6 +70,10 @@ Describe 'New-GHProject Function' {
             (Get-Command New-GHProject).Parameters['Private'].ParameterType.Name | Should -Be 'SwitchParameter'
         }
         
+        It 'Should have optional IsOrganization parameter' {
+            (Get-Command New-GHProject).Parameters['IsOrganization'].ParameterType.Name | Should -Be 'SwitchParameter'
+        }
+        
         It 'Should support ShouldProcess' {
             (Get-Command New-GHProject).Parameters.ContainsKey('WhatIf') | Should -Be $true
             (Get-Command New-GHProject).Parameters.ContainsKey('Confirm') | Should -Be $true
