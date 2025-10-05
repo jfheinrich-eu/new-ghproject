@@ -1,0 +1,281 @@
+# CI/CD Workflow for New-GHProject PowerShell Module
+#
+# This workflow provides continuous integration and deployment automation including:
+# - Automated testing across Windows, Linux, and macOS platforms
+# - Code quality analysis with PSScriptAnalyzer
+# - Automatic PR labeling based on changed files
+# - Automated version bumping and release creation based on PR labels
+#
+# Triggered on:
+# - Push to main/master branch
+# - Pull requests to main/master branch
+# - Manual workflow dispatch
+#
+# Release Process:
+# - Add 'major release', 'minor release', or 'patch release' label to PR
+# - Add 'skip release' label to prevent release creation
+# - On merge, version is bumped and release is created automatically
+
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  label:
+    # Automatically labels pull requests based on changed files
+    # Uses the labeler action with configuration from .github/labeler.yml
+    name: Auto-label PR
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    # Run Pester tests across multiple operating systems
+    # Generates test results and code coverage reports
+    name: Test PowerShell Module
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted -Scope CurrentUser
+          Install-Module -Name Pester -MinimumVersion 5.3.0 -Force -SkipPublisherCheck
+      
+      - name: Run Pester Tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './Tests'
+          $config.Run.Exit = $true
+          $config.CodeCoverage.Enabled = $true
+          $config.CodeCoverage.Path = './New-GHProject/**/*.ps1'
+          $config.CodeCoverage.OutputPath = './coverage.xml'
+          $config.CodeCoverage.OutputFormat = 'JaCoCo'
+          $config.TestResult.Enabled = $true
+          $config.TestResult.OutputPath = './testResults.xml'
+          $config.Output.Verbosity = 'Detailed'
+          
+          Invoke-Pester -Configuration $config
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: testResults.xml
+      
+      - name: Upload coverage results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-results-${{ matrix.os }}
+          path: coverage.xml
+  
+  lint:
+    # Run PSScriptAnalyzer to ensure code quality and adherence to best practices
+    # Fails if any issues are found
+    name: PowerShell Script Analyzer
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force
+      
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./New-GHProject -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          $results | Format-Table -AutoSize
+          if ($results) {
+            Write-Error "PSScriptAnalyzer found $($results.Count) issue(s)"
+            exit 1
+          }
+
+  release:
+    # Automated release creation based on PR labels
+    # Bumps version, creates git tag, and publishes GitHub release
+    # Only runs on main/master branch after successful tests and linting
+    name: Create Release
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get merged PR labels
+        id: pr-labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commit = context.sha;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Find PRs associated with this commit
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner,
+              repo,
+              commit_sha: commit
+            });
+            
+            // Get the most recent merged PR
+            const mergedPR = prs.find(pr => pr.merged_at);
+            
+            if (!mergedPR) {
+              console.log('No merged PR found for this commit');
+              core.setOutput('skip_release', 'true');
+              core.setOutput('release_type', 'none');
+              return;
+            }
+            
+            const labels = mergedPR.labels.map(l => l.name);
+            console.log(`PR #${mergedPR.number} labels:`, labels);
+            
+            // Check for skip release
+            if (labels.includes('skip release')) {
+              console.log('Skip release label found');
+              core.setOutput('skip_release', 'true');
+              core.setOutput('release_type', 'none');
+              return;
+            }
+            
+            // Determine release type
+            let releaseType = 'none';
+            if (labels.includes('major release')) {
+              releaseType = 'major';
+            } else if (labels.includes('minor release')) {
+              releaseType = 'minor';
+            } else if (labels.includes('patch release')) {
+              releaseType = 'patch';
+            }
+            
+            console.log(`Release type: ${releaseType}`);
+            core.setOutput('skip_release', 'false');
+            core.setOutput('release_type', releaseType);
+            core.setOutput('pr_number', mergedPR.number);
+      
+      - name: Get current version
+        if: steps.pr-labels.outputs.skip_release != 'true' && steps.pr-labels.outputs.release_type != 'none'
+        id: current-version
+        shell: pwsh
+        run: |
+          $manifestPath = './New-GHProject/New-GHProject.psd1'
+          $manifest = Import-PowerShellDataFile $manifestPath
+          $currentVersion = $manifest.ModuleVersion
+          Write-Output "Current version: $currentVersion"
+          echo "version=$currentVersion" >> $env:GITHUB_OUTPUT
+      
+      - name: Calculate new version
+        if: steps.pr-labels.outputs.skip_release != 'true' && steps.pr-labels.outputs.release_type != 'none'
+        id: new-version
+        shell: pwsh
+        run: |
+          $currentVersion = '${{ steps.current-version.outputs.version }}'
+          $releaseType = '${{ steps.pr-labels.outputs.release_type }}'
+          
+          $versionParts = $currentVersion -split '\.'
+          $major = [int]$versionParts[0]
+          $minor = [int]$versionParts[1]
+          $patch = [int]$versionParts[2]
+          
+          switch ($releaseType) {
+            'major' {
+              $major++
+              $minor = 0
+              $patch = 0
+            }
+            'minor' {
+              $minor++
+              $patch = 0
+            }
+            'patch' {
+              $patch++
+            }
+          }
+          
+          $newVersion = "$major.$minor.$patch"
+          Write-Output "New version: $newVersion"
+          echo "version=$newVersion" >> $env:GITHUB_OUTPUT
+      
+      - name: Update module version
+        if: steps.pr-labels.outputs.skip_release != 'true' && steps.pr-labels.outputs.release_type != 'none'
+        shell: pwsh
+        run: |
+          $manifestPath = './New-GHProject/New-GHProject.psd1'
+          $newVersion = '${{ steps.new-version.outputs.version }}'
+          
+          $content = Get-Content $manifestPath -Raw
+          $content = $content -replace "ModuleVersion = '\d+\.\d+\.\d+'", "ModuleVersion = '$newVersion'"
+          Set-Content -Path $manifestPath -Value $content
+          
+          Write-Output "Updated version to $newVersion"
+      
+      - name: Commit version update
+        if: steps.pr-labels.outputs.skip_release != 'true' && steps.pr-labels.outputs.release_type != 'none'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add New-GHProject/New-GHProject.psd1
+          git commit -m "chore: bump version to ${{ steps.new-version.outputs.version }}"
+          git push
+      
+      - name: Create Git tag
+        if: steps.pr-labels.outputs.skip_release != 'true' && steps.pr-labels.outputs.release_type != 'none'
+        run: |
+          git tag -a "v${{ steps.new-version.outputs.version }}" -m "Release v${{ steps.new-version.outputs.version }}"
+          git push origin "v${{ steps.new-version.outputs.version }}"
+      
+      - name: Create GitHub Release
+        if: steps.pr-labels.outputs.skip_release != 'true' && steps.pr-labels.outputs.release_type != 'none'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.new-version.outputs.version }}';
+            const releaseType = '${{ steps.pr-labels.outputs.release_type }}';
+            const prNumber = '${{ steps.pr-labels.outputs.pr_number }}';
+            
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              name: `Release v${version}`,
+              body: `${releaseType.charAt(0).toUpperCase() + releaseType.slice(1)} release from PR #${prNumber}`,
+              draft: false,
+              prerelease: false
+            });
+            
+            console.log(`Created release: ${release.html_url}`);

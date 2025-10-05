@@ -1,0 +1,101 @@
+# PowerShell Gallery Publishing Workflow
+#
+# This workflow publishes the New-GHProject module to the PowerShell Gallery.
+#
+# Triggered on:
+# - Release publication (automatically after CI/CD creates a release)
+# - Manual workflow dispatch (allows manual publishing with custom version)
+#
+# Prerequisites:
+# - PSGALLERY_API_KEY secret must be configured in repository settings
+# - API key can be obtained from: https://www.powershellgallery.com/account/apikeys
+#
+# The workflow performs the following steps:
+# 1. Updates module version from release tag or manual input
+# 2. Validates the module manifest
+# 3. Publishes to PowerShell Gallery
+# 4. Creates a release asset ZIP file (for releases only)
+
+name: Publish to PowerShell Gallery
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Module version to publish'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    # Publishes the module to PowerShell Gallery
+    # Updates version, validates manifest, and creates release assets
+    name: Publish Module
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Update module version
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          $manifestPath = './New-GHProject/New-GHProject.psd1'
+          $manifest = Import-PowerShellDataFile $manifestPath
+          $content = Get-Content $manifestPath -Raw
+          $content = $content -replace "ModuleVersion = '\d+\.\d+\.\d+'", "ModuleVersion = '${{ github.event.inputs.version }}'"
+          Set-Content -Path $manifestPath -Value $content
+      
+      - name: Extract version from tag
+        if: github.event_name == 'release'
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Update module version from tag
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          $manifestPath = './New-GHProject/New-GHProject.psd1'
+          $content = Get-Content $manifestPath -Raw
+          $content = $content -replace "ModuleVersion = '\d+\.\d+\.\d+'", "ModuleVersion = '${{ steps.get_version.outputs.VERSION }}'"
+          Set-Content -Path $manifestPath -Value $content
+      
+      - name: Test module manifest
+        shell: pwsh
+        run: |
+          Test-ModuleManifest -Path './New-GHProject/New-GHProject.psd1'
+      
+      - name: Publish to PowerShell Gallery
+        shell: pwsh
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          if ([string]::IsNullOrEmpty($env:PSGALLERY_API_KEY)) {
+            Write-Warning "PSGallery API key not found. Skipping publish."
+            exit 0
+          }
+          
+          Publish-Module -Path './New-GHProject' -NuGetApiKey $env:PSGALLERY_API_KEY -Verbose
+      
+      - name: Create GitHub Release Asset
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          $version = '${{ steps.get_version.outputs.VERSION }}'
+          Compress-Archive -Path './New-GHProject/*' -DestinationPath "./New-GHProject-$version.zip"
+      
+      - name: Upload Release Asset
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./New-GHProject-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_name: New-GHProject-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_content_type: application/zip
