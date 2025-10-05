@@ -51,6 +51,14 @@ New-GHProject -RepositoryName "my-new-repo" -Owner "myusername" -Description "My
 New-GHProject -RepositoryName "private-repo" -Owner "myusername" -Description "Private project" -Private -Token $env:GITHUB_TOKEN
 ```
 
+### Create a Repository in an Organization (Optimized)
+
+```powershell
+# Create a repository in an organization with IsOrganization parameter
+# This avoids an extra API call to check the authenticated user
+New-GHProject -RepositoryName "org-repo" -Owner "myorganization" -Description "Org project" -IsOrganization -Token $env:GITHUB_TOKEN
+```
+
 ### Using WhatIf
 
 ```powershell
@@ -64,6 +72,7 @@ New-GHProject -RepositoryName "test-repo" -Owner "myusername" -Token $env:GITHUB
 - **Owner** (Mandatory): The owner (user or organization) of the repository
 - **Description** (Optional): A short description of the repository
 - **Private** (Optional): Switch to create a private repository (default is public)
+- **IsOrganization** (Optional): Switch to specify that the owner is an organization. This avoids an extra API call to get the authenticated user
 - **Token** (Mandatory): GitHub Personal Access Token with repo permissions
 
 ## Development
