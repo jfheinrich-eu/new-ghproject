@@ -59,7 +59,7 @@ jobs:
       - name: Install Pester
         shell: pwsh
         run: |
-          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Set-PSRepository PSGallery -InstallationPolicy Trusted -Scope CurrentUser
           Install-Module -Name Pester -MinimumVersion 5.3.0 -Force -SkipPublisherCheck
       
       - name: Run Pester Tests
