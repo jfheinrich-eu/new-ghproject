@@ -21,7 +21,7 @@
     Description = 'PowerShell module to create GitHub repositories with proper branch setup and protection rules.'
 
     # Minimum version of the PowerShell engine required by this module
-    PowerShellVersion = '5.1'
+    PowerShellVersion = '7.4'
 
     # Functions to export from this module
     FunctionsToExport = @(
