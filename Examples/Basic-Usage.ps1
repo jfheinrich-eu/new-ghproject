@@ -1,3 +1,18 @@
+<#
+.SYNOPSIS
+    Examples demonstrating usage of the New-GHProject PowerShell module.
+
+.DESCRIPTION
+    This script provides comprehensive examples of how to use the New-GHProject module
+    to create GitHub repositories with various configurations. All examples include
+    detailed explanations and are designed to demonstrate best practices.
+
+.NOTES
+    Author: J.F.Heinrich
+    Prerequisites: GitHub Personal Access Token with 'repo' permissions
+    Token Creation: https://github.com/settings/tokens
+#>
+
 # Example usage of New-GHProject module
 
 # Import the module
@@ -13,11 +28,11 @@ $token = $env:GITHUB_TOKEN
 # Example 1: Create a public repository with WhatIf (safe, doesn't actually create)
 Write-Host "`n=== Example 1: Using WhatIf ===" -ForegroundColor Cyan
 New-GHProject -RepositoryName "test-repo" `
-              -Owner "yourusername" `
-              -Description "Test repository" `
-              -Token $token `
-              -WhatIf `
-              -Verbose
+    -Owner "yourusername" `
+    -Description "Test repository" `
+    -Token $token `
+    -WhatIf `
+    -Verbose
 
 # Example 2: Create a public repository
 Write-Host "`n=== Example 2: Create Public Repository ===" -ForegroundColor Cyan

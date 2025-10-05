@@ -1,14 +1,31 @@
+<#
+.SYNOPSIS
+    Pester tests for the New-GHProject PowerShell module.
+
+.DESCRIPTION
+    This test suite validates the functionality of the New-GHProject module including:
+    - Module import and export functionality
+    - Parameter validation and types
+    - Comment-based help documentation
+    - ShouldProcess support
+
+.NOTES
+    Test Framework: Pester 5.x
+    Author: J.F.Heinrich
+    Version: 1.0.0
+#>
+
 BeforeAll {
     # Import the module
     $ModulePath = Split-Path -Parent $PSScriptRoot
     $ModuleName = 'New-GHProject'
     
-    # Remove module if already loaded
+    # Remove module if already loaded to ensure clean state
     if (Get-Module -Name $ModuleName) {
         Remove-Module -Name $ModuleName -Force
     }
     
-    # Import the module
+    # Import the module for testing
     Import-Module "$ModulePath\$ModuleName\$ModuleName.psd1" -Force
 }
 
@@ -79,6 +96,6 @@ Describe 'New-GHProject Function' {
 }
 
 AfterAll {
-    # Clean up
+    # Clean up - remove the module after tests complete
     Remove-Module -Name 'New-GHProject' -Force -ErrorAction SilentlyContinue
 }
