@@ -1,20 +1,46 @@
+<#
+.SYNOPSIS
+    PSScriptAnalyzer configuration for New-GHProject module.
+
+.DESCRIPTION
+    This configuration file defines the rules and settings for PSScriptAnalyzer,
+    the PowerShell code quality and style checking tool. It ensures consistent
+    code quality and adherence to PowerShell best practices throughout the project.
+
+    The configuration includes:
+    - All default PowerShell Gallery rules
+    - Severity levels (Error, Warning, Information)
+    - Code formatting rules (braces, indentation, whitespace)
+    - Best practice rules (parameter validation, error handling, etc.)
+
+.NOTES
+    PSScriptAnalyzer Documentation: https://github.com/PowerShell/PSScriptAnalyzer
+    Rule Reference: https://github.com/PowerShell/PSScriptAnalyzer/tree/master/RuleDocumentation
+#>
+
 @{
-    # Use the PowerShell Gallery rule set
+    # Use the PowerShell Gallery rule set as a foundation
     IncludeDefaultRules = $true
     
-    # Severity levels to include
+    # Severity levels to include in analysis
+    # Error: Critical issues that must be fixed
+    # Warning: Important issues that should be addressed
+    # Information: Suggestions for improvement
     Severity = @('Error', 'Warning', 'Information')
     
-    # Rules to exclude (if any)
+    # Rules to exclude from analysis (if any)
+    # Uncomment individual rules to exclude them from analysis
     ExcludeRules = @(
-        # Uncomment any rules you want to exclude
+        # Example: Uncomment to allow Write-Host usage
         # 'PSAvoidUsingWriteHost'
     )
     
-    # Custom rules (if any)
+    # Custom rules path (empty by default)
+    # Add paths to custom rule scripts if needed
     CustomRulePath = @()
     
-    # Rules to run
+    # Specific rules to run (in addition to defaults)
+    # This list ensures critical best practice rules are enforced
     IncludeRules = @(
         'PSAvoidDefaultValueForMandatoryParameter',
         'PSAvoidDefaultValueSwitchParameter',
@@ -74,41 +100,48 @@
         'PSUseUsingScopeModifierInNewRunspaces'
     )
     
-    # Settings for specific rules
+    # Detailed settings for specific rules
+    # These configurations fine-tune the behavior of individual rules
     Rules = @{
+        # Open brace placement: Same line, new line after
         PSPlaceOpenBrace = @{
-            Enable = $true
-            OnSameLine = $true
-            NewLineAfter = $true
+            Enable             = $true
+            OnSameLine         = $true
+            NewLineAfter       = $true
             IgnoreOneLineBlock = $true
         }
         
+        # Close brace placement: New line after, allow empty lines before
         PSPlaceCloseBrace = @{
-            Enable = $true
-            NewLineAfter = $true
+            Enable             = $true
+            NewLineAfter       = $true
             IgnoreOneLineBlock = $true
-            NoEmptyLineBefore = $false
+            NoEmptyLineBefore  = $false
         }
         
+        # Indentation: Use spaces (4 spaces per level)
         PSUseConsistentIndentation = @{
-            Enable = $true
-            Kind = 'space'
+            Enable          = $true
+            Kind            = 'space'
             IndentationSize = 4
         }
         
+        # Whitespace consistency: Enforce spacing around operators and brackets
         PSUseConsistentWhitespace = @{
-            Enable = $true
-            CheckOpenBrace = $true
-            CheckOpenParen = $true
-            CheckOperator = $true
-            CheckSeparator = $true
+            Enable          = $true
+            CheckOpenBrace  = $true
+            CheckOpenParen  = $true
+            CheckOperator   = $true
+            CheckSeparator  = $true
         }
         
+        # Assignment alignment: Align assignments in hashtables
         PSAlignAssignmentStatement = @{
-            Enable = $true
+            Enable         = $true
             CheckHashtable = $true
         }
         
+        # Correct casing: Enforce proper casing for cmdlets and parameters
         PSUseCorrectCasing = @{
             Enable = $true
         }
