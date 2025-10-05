@@ -1,3 +1,21 @@
+# CI/CD Workflow for New-GHProject PowerShell Module
+#
+# This workflow provides continuous integration and deployment automation including:
+# - Automated testing across Windows, Linux, and macOS platforms
+# - Code quality analysis with PSScriptAnalyzer
+# - Automatic PR labeling based on changed files
+# - Automated version bumping and release creation based on PR labels
+#
+# Triggered on:
+# - Push to main/master branch
+# - Pull requests to main/master branch
+# - Manual workflow dispatch
+#
+# Release Process:
+# - Add 'major release', 'minor release', or 'patch release' label to PR
+# - Add 'skip release' label to prevent release creation
+# - On merge, version is bumped and release is created automatically
+
 name: CI/CD
 
 on:
@@ -9,6 +27,8 @@ on:
 
 jobs:
   label:
+    # Automatically labels pull requests based on changed files
+    # Uses the labeler action with configuration from .github/labeler.yml
     name: Auto-label PR
     if: github.event_name == 'pull_request'
     permissions:
@@ -23,6 +43,8 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   test:
+    # Run Pester tests across multiple operating systems
+    # Generates test results and code coverage reports
     name: Test PowerShell Module
     runs-on: ${{ matrix.os }}
     strategy:
@@ -71,6 +93,8 @@ jobs:
           path: coverage.xml
   
   lint:
+    # Run PSScriptAnalyzer to ensure code quality and adherence to best practices
+    # Fails if any issues are found
     name: PowerShell Script Analyzer
     runs-on: ubuntu-latest
     
@@ -95,6 +119,9 @@ jobs:
           }
 
   release:
+    # Automated release creation based on PR labels
+    # Bumps version, creates git tag, and publishes GitHub release
+    # Only runs on main/master branch after successful tests and linting
     name: Create Release
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     needs: [test, lint]

@@ -120,3 +120,48 @@
         Write-Verbose "Completed New-GHProject function"
     }
 }
+
+function Get-GitHubAuthenticatedUser {
+    <#
+    .SYNOPSIS
+        Retrieves the authenticated GitHub user's login name.
+
+    .DESCRIPTION
+        This helper function queries the GitHub API to get the login name of the user
+        associated with the provided GitHub token. This is used internally to determine
+        whether to create a repository under a user account or an organization.
+
+    .PARAMETER Token
+        GitHub personal access token with appropriate permissions.
+
+    .OUTPUTS
+        System.String
+        Returns the login name of the authenticated GitHub user.
+
+    .EXAMPLE
+        Get-GitHubAuthenticatedUser -Token $token
+        Returns the login name of the user associated with the provided token.
+
+    .NOTES
+        This is an internal helper function used by New-GHProject.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Token
+    )
+
+    # Set up headers for GitHub API authentication
+    $headers = @{
+        'Authorization' = "token $Token"
+        'Accept' = 'application/vnd.github.v3+json'
+    }
+
+    try {
+        # Query GitHub API for authenticated user information
+        $user = Invoke-RestMethod -Uri "https://api.github.com/user" -Headers $headers
+        return $user.login
+    }
+    catch {
+        throw "Failed to get authenticated user: $_"
+    }
+}

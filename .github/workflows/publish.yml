@@ -1,3 +1,21 @@
+# PowerShell Gallery Publishing Workflow
+#
+# This workflow publishes the New-GHProject module to the PowerShell Gallery.
+#
+# Triggered on:
+# - Release publication (automatically after CI/CD creates a release)
+# - Manual workflow dispatch (allows manual publishing with custom version)
+#
+# Prerequisites:
+# - PSGALLERY_API_KEY secret must be configured in repository settings
+# - API key can be obtained from: https://www.powershellgallery.com/account/apikeys
+#
+# The workflow performs the following steps:
+# 1. Updates module version from release tag or manual input
+# 2. Validates the module manifest
+# 3. Publishes to PowerShell Gallery
+# 4. Creates a release asset ZIP file (for releases only)
+
 name: Publish to PowerShell Gallery
 
 on:
@@ -12,6 +30,8 @@ on:
 
 jobs:
   publish:
+    # Publishes the module to PowerShell Gallery
+    # Updates version, validates manifest, and creates release assets
     name: Publish Module
     runs-on: ubuntu-latest
     
